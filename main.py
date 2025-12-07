@@ -26,7 +26,7 @@ def run(grid_size, n_green, n_red, rerun):
     discriminator = Discriminator()
     generator_trainer = GeneratorTrainer(grid_size, material_point, generator, discriminator)
     discriminator_trainer = DiscriminatorTrainer(generator, discriminator)
-    visualizer = TrainingVisualizer()
+    #visualizer = TrainingVisualizer()
 
     for level in range(10):
         print(f'\n🚀 Проходим уровень {level + 1}')
@@ -56,6 +56,7 @@ def run(grid_size, n_green, n_red, rerun):
                 level_successes += metrics_for_level.success_count
             level_attempts += 1
 
+
             gen_loss = discriminator_trainer.train_discriminator(metrics_for_level, epochs=1)
             dis_loss = generator_trainer.train_generator()
 
@@ -63,11 +64,12 @@ def run(grid_size, n_green, n_red, rerun):
             success_rate = level_successes / level_attempts if level_attempts > 0 else 0
 
             # Визуализация
-            visualizer.update_plots(level + 1, gen_loss, dis_loss, success_rate)
-            visualizer.print_status(level + 1, gen_loss, dis_loss, success_rate)
+            #visualizer.update_plots(level + 1, gen_loss, dis_loss, success_rate)
+            #visualizer.print_status(level + 1, gen_loss, dis_loss, success_rate)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     plt.ioff()
                     plt.show()
                     return
+

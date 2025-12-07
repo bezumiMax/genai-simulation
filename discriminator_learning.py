@@ -29,10 +29,9 @@ class DiscriminatorTrainer:
         self.learnability_weight = 0.3
 
     def generate_fake_samples(self):
-        time_learning = random.uniform(0.0, 200.0)
         total_reward = random.uniform(-200.0, 200.0)
         time_passage = random.uniform(0.0, 40.0)
-        fake_metrics = torch.tensor([time_learning, total_reward, time_passage])
+        fake_metrics = torch.tensor([total_reward, time_passage])
         fake_labels = torch.zeros(1, 1)
         return fake_metrics, fake_labels
 
@@ -40,7 +39,7 @@ class DiscriminatorTrainer:
         real_samples = metrics
         real_labels = torch.ones(1, 1)
         fake_samples, fake_labels = self.generate_fake_samples()
-        all_samples = torch.cat([real_samples, fake_samples], dim=0).reshape(2, 3)
+        all_samples = torch.cat([real_samples, fake_samples], dim=0).reshape(2, 2)
         all_labels = torch.cat([real_labels, fake_labels], dim=0)
         indices = torch.randperm(all_samples.size(0))
         return all_samples[indices], all_labels[indices]

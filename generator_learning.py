@@ -4,9 +4,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 import numpy as np
 import random
-from create_mpd import create_mdp
+from create_mdp import create_mdp
 from policy_iteration import policy_improvement, policy_evaluation, policy_iteration
-from run_hero import run_hero
+from double_q_learning import double_q_learning
 
 
 class GeneratorTrainer:
@@ -32,7 +32,7 @@ class GeneratorTrainer:
         fake_data = self.generator(z, level_data)
         coords_green = fake_data['coords_green']
         coords_red = fake_data['coords_red']
-        fake_data = run_hero(self.material_point, level_data[0], level_data[1], level_data[2], coords_green, coords_red)
+        fake_data = double_q_learning(self.material_point, level_data[0], level_data[1], level_data[2], coords_green, coords_red)
         validity_score, difficulty_score, learnability_score = self.discriminator(fake_data)
         target_valid = torch.ones_like(validity_score)
         target_diff = torch.ones_like(difficulty_score)

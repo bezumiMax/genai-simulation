@@ -11,7 +11,7 @@ from torch import nn
 
 
 class Discriminator(nn.Module):
-    def __init__(self, input_dim=3, hidden_dim=128, dropout_rate=0.3):
+    def __init__(self, input_dim=2, hidden_dim=128, dropout_rate=0.3):
         super(Discriminator, self).__init__()
         self.feature_extractor = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -43,13 +43,12 @@ class Discriminator(nn.Module):
         """Предобработка и нормализация входных данных"""
         if metrics.dim() == 1:
             metrics = metrics.unsqueeze(0)
-        if metrics.size(0) == 3 and metrics.size(1) != 3:
+        if metrics.size(0) == 2 and metrics.size(1) != 2:
             metrics = metrics.T
-        log_time_learning = torch.log(metrics[:, 0] + 1e-8)
-        log_time_passage = torch.log(metrics[:, 2] + 1e-8)
-        normalized_reward = (metrics[:, 1] - metrics[:, 1].min()) / (
-                metrics[:, 1].max() - metrics[:, 1].min() + 1e-8)
-        inputs = torch.stack([log_time_learning, normalized_reward, log_time_passage], dim=1)
+        log_time_passage = torch.log(metrics[:, 1] + 1e-8)
+        normalized_reward = (metrics[:, 0] - metrics[:, 0].min()) / (
+                metrics[:, 0].max() - metrics[:, 0].min() + 1e-8)
+        inputs = torch.stack([normalized_reward, log_time_passage], dim=1)
         inputs_np = inputs.detach().numpy()
         return inputs
 
@@ -64,7 +63,6 @@ class Discriminator(nn.Module):
 
     def get_discrimination_criteria(self):
         return {
-            'optimal_time_learning': (10.0, 100.0),
             'optimal_total_reward': (-1000.0, 0.0),
             'optimal_time_passage': (5.0, 100.0)
         }
@@ -75,19 +73,14 @@ class Discriminator(nn.Module):
         if metrics.dim() == 1:
             metrics = metrics.unsqueeze(0)
 
-        if metrics.size(0) == 3 and metrics.size(1) != 3:
+        if metrics.size(0) == 2 and metrics.size(1) != 2:
             metrics = metrics.T
-
-        time_learning_loss = torch.mean(
-            torch.relu(criteria['optimal_time_learning'][0] - metrics[:, 0]) +
-            torch.relu(metrics[:, 0] - criteria['optimal_time_learning'][1])
-        )
         reward_loss = torch.mean(
-            torch.relu(criteria['optimal_total_reward'][0] - metrics[:, 1]) +
-            torch.relu(metrics[:, 1] - criteria['optimal_total_reward'][1])
+            torch.relu(criteria['optimal_total_reward'][0] - metrics[:, 0]) +
+            torch.relu(metrics[:, 0] - criteria['optimal_total_reward'][0])
         )
         time_passage_loss = torch.mean(
-            torch.relu(criteria['optimal_time_passage'][0] - metrics[:, 2]) +
-            torch.relu(metrics[:, 2] - criteria['optimal_time_passage'][1])
+            torch.relu(criteria['optimal_time_passage'][0] - metrics[:, 1]) +
+            torch.relu(metrics[:, 1] - criteria['optimal_time_passage'][1])
         )
-        return time_learning_loss + reward_loss + time_passage_loss
+        return reward_loss + time_passage_loss

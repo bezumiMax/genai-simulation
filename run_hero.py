@@ -1,13 +1,14 @@
 from policy_iteration import policy_evaluation, policy_improvement, policy_iteration
 import time
 import pygame
-from create_mpd import create_mdp
-from create_mpd import get_state
+from create_mdp import create_mdp
+from create_mdp import get_state
 from tqdm import tqdm
 import torch
 
 
 def run_hero(material_point, grid_size, n_green, n_red, coords_green, coords_red):
+    print(n_green, n_red)
     """Возвращает метрики"""
     pygame.init()
     screen = pygame.display.set_mode((grid_size * 50, grid_size * 50))
