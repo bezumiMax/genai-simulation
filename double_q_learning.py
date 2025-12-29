@@ -1,6 +1,5 @@
 """теперь двойное q-обучение"""
 import torch
-from decay_shedule import decay_schedule
 import numpy as np
 import pygame
 from tqdm import tqdm
@@ -8,25 +7,17 @@ import time
 
 
 def double_q_learning(material_point,
+                      agent,
+                      is_fake,
                       grid_size,
                       n_green,
                       n_red,
                       coords_green,
                       coords_red,
-                      gamma=0.98,
-                      init_alpha=0.5,
-                      min_alpha=0.01,
-                      alpha_decay_ratio=0.5,
-                      init_eps=1.0,
-                      min_eps=0.1,
-                      eps_decay_ratio=0.9,
-                      episodes=10000):
+                      episodes,
+                      gamma=0.98):
     n_green = n_green.item()
     n_red = n_red.item()
-    for i in range(n_green):
-        print(f"{i}: {coords_green[i]}")
-    for i in range(n_red):
-        print(f"{i}: {coords_red[i]}")
     pygame.init()
     screen = pygame.display.set_mode((grid_size * 50, grid_size * 50))
     pygame.display.set_caption("GenLab: Simulator")
@@ -44,22 +35,21 @@ def double_q_learning(material_point,
     material_point.rect.centerx = material_point.screen_rect.centerx
     material_point.rect.centery = material_point.screen_rect.centery
     start_time = time.time()
-    epsilons = decay_schedule(init_eps, min_eps, eps_decay_ratio, episodes)
-    alphas = decay_schedule(init_alpha, min_alpha, alpha_decay_ratio, episodes)
+    epsilons = agent.epsilons.copy()
+    alphas = agent.alphas
     state = int(get_state(material_point, grid_size))
     available_actions = [0, 1, 2, 3]
     total_reward = 0
     success_count = 0
     n_states = grid_size ** 2
     n_actions = 4
-    Q1 = np.zeros((n_states, n_actions), dtype=np.float64)
-    Q2 = np.zeros((n_states, n_actions), dtype=np.float64)
+    Q1 = agent.Q1.copy()
+    Q2 = agent.Q2.copy()
     N = np.zeros((n_states, n_actions), dtype=np.float64)
-    Qe = [None] * episodes
     returns = np.zeros(episodes, dtype=np.float64)
     actions = np.zeros(episodes, dtype=np.int32)
     font = pygame.font.Font(None, 18)
-    for e in tqdm(range(episodes), desc='Episodes', leave=False):
+    for e in tqdm(range(episodes - 150, episodes), desc='Episodes', leave=False):
         eps = epsilons[e]
         alpha = alphas[e]
         state = get_state(material_point, grid_size)
@@ -109,11 +99,10 @@ def double_q_learning(material_point,
             coords_green.remove(agent_pos)
             n_green -= 1
             if len(coords_green) == 0:
-                print("Все зеленые квадраты собраны!")
                 end_time = time.time()
                 return torch.tensor([total_reward, end_time - start_time])
         elif agent_pos in coords_red:
-            reward = -50
+            reward = -100
             total_reward += reward
         else:
             reward = -1
@@ -121,12 +110,18 @@ def double_q_learning(material_point,
         if np.random.random() < 0.5:
             best_action = np.argmax(Q1[new_state])
             Q1[state, action] += alpha * (reward + gamma * Q2[new_state, best_action] - Q1[state, action])
+            if not is_fake:
+                agent.update(Q1, Q2)
         else:
             best_action = np.argmax(Q2[new_state])
             Q2[state, action] += alpha * (reward + gamma * Q1[new_state, best_action] - Q2[state, action])
+            if not is_fake:
+                agent.update(Q1, Q2)
+        if time.time() - start_time > 50.0:
+            end_time = time.time()
+            return torch.tensor([total_reward, 51.0])
         N[state, action] += 1
         Q_combined = (Q1 + Q2) / 2
-        Qe[e] = Q_combined.copy()
         returns[e] = reward
         actions[e] = action
         screen.fill(bg_color)

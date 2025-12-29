@@ -1,10 +1,3 @@
-"""
-дискриминатор получает на вход info: качество прохождения уровня агентом rl
-info:
-    time_learning (время обучения),
-    total_reward (награда за лучшую политику),
-    time_passage (время прохождения лучшей политики)
-"""
 import torch
 from sklearn.preprocessing import StandardScaler
 from torch import nn
@@ -43,17 +36,16 @@ class Discriminator(nn.Module):
         """Предобработка и нормализация входных данных"""
         if metrics.dim() == 1:
             metrics = metrics.unsqueeze(0)
-        if metrics.size(0) == 2 and metrics.size(1) != 2:
-            metrics = metrics.T
+        #if metrics.size(0) == 2 and metrics.size(1) != 2:
+        #    metrics = metrics.T
         log_time_passage = torch.log(metrics[:, 1] + 1e-8)
         normalized_reward = (metrics[:, 0] - metrics[:, 0].min()) / (
                 metrics[:, 0].max() - metrics[:, 0].min() + 1e-8)
         inputs = torch.stack([normalized_reward, log_time_passage], dim=1)
-        inputs_np = inputs.detach().numpy()
         return inputs
 
     def forward(self, metrics: torch.tensor):
-        metrics = metrics.T
+        #metrics = metrics.T
         x = self.preprocess(metrics)
         features = self.feature_extractor(x)
         validity_score = self.classifier(features)
@@ -63,8 +55,8 @@ class Discriminator(nn.Module):
 
     def get_discrimination_criteria(self):
         return {
-            'optimal_total_reward': (-1000.0, 0.0),
-            'optimal_time_passage': (5.0, 100.0)
+            'optimal_total_reward': (-1000.0, -100.0),
+            'optimal_time_passage': (40.0, 51.0)
         }
 
     def calculate_auxiliary_loss(self, metrics: torch.Tensor):
@@ -76,7 +68,7 @@ class Discriminator(nn.Module):
         if metrics.size(0) == 2 and metrics.size(1) != 2:
             metrics = metrics.T
         reward_loss = torch.mean(
-            torch.relu(criteria['optimal_total_reward'][0] - metrics[:, 0]) +
+            torch.relu(criteria['optimal_total_reward'][0] - metrics[:, 0]) * 2.0 +
             torch.relu(metrics[:, 0] - criteria['optimal_total_reward'][0])
         )
         time_passage_loss = torch.mean(

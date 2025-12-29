@@ -5,7 +5,7 @@ import numpy as np
 
 
 class Generator(nn.Module):
-    def __init__(self, latent_dim=10, hidden_dim=128):
+    def __init__(self, latent_dim=1, hidden_dim=32):
         super(Generator,  self).__init__()
         self.latent_dim = latent_dim
         self.hidden_dim = hidden_dim
@@ -24,7 +24,7 @@ class Generator(nn.Module):
             nn.Linear(hidden_dim, 1)
         )
 
-    def smooth_sigmoid(self, x, temperature=500.0):
+    def smooth_sigmoid(self, x, temperature=1.0):
         return torch.sigmoid(x / temperature)
 
     def get_valid_transitions(self, state) -> list:

@@ -10,9 +10,10 @@ from double_q_learning import double_q_learning
 
 
 class GeneratorTrainer:
-    def __init__(self, grid_size, material_point, generator, discriminator, latent_dim=10, lr_g=0.0002, lr_d=0.0001):
+    def __init__(self, grid_size, material_point, agent, generator, discriminator, latent_dim=1, lr_g=0.0002, lr_d=0.0001):
         self.grid_size = grid_size
         self.material_point = material_point
+        self.agent = agent
         self.generator = generator
         self.discriminator = discriminator
         self.latent_dim = latent_dim
@@ -32,7 +33,7 @@ class GeneratorTrainer:
         fake_data = self.generator(z, level_data)
         coords_green = fake_data['coords_green']
         coords_red = fake_data['coords_red']
-        fake_data = double_q_learning(self.material_point, level_data[0], level_data[1], level_data[2], coords_green, coords_red)
+        fake_data = double_q_learning(self.material_point, self.agent, True, level_data[0], level_data[1], level_data[2], coords_green, coords_red, 450)
         validity_score, difficulty_score, learnability_score = self.discriminator(fake_data)
         target_valid = torch.ones_like(validity_score)
         target_diff = torch.ones_like(difficulty_score)

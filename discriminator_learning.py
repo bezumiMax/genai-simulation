@@ -51,6 +51,9 @@ class DiscriminatorTrainer:
         total_auxiliary_loss = 0
         total_loss = 0
         validity_score, difficulty_score, learnability_score = self.discriminator(metrics)
+        validity_score = torch.sigmoid(validity_score)
+        difficulty_score = torch.sigmoid(difficulty_score)
+        learnability_score = torch.sigmoid(learnability_score)
         adversarial_loss = self.adversarial_loss(validity_score, labels)
         difficulty_loss = self.adversarial_loss(difficulty_score, labels)
         learnability_loss = self.adversarial_loss(learnability_score, labels)
